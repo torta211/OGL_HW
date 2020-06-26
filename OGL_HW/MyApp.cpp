@@ -186,6 +186,17 @@ bool CMyApp::Init(int w_init, int h_init)
 
 	LoadAssets();
 
+	// Create point lights
+	for (int i = 0; i < NUM_POINT_LIGHTS; ++i)
+	{
+		pointLightPositions[i] = glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
+										   rand() / (double)RAND_MAX * 100.0f + 35.0f,
+										   rand() / (double)RAND_MAX * 700.0f - 350.0f);
+		pointLightNextPositions[i] = glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
+											   rand() / (double)RAND_MAX * 100.0f + 35.0f,
+											   rand() / (double)RAND_MAX * 700.0f - 350.0f);
+	}
+
 	CreateForwardBuffer(w_init, h_init);
 
 	return true;
@@ -205,6 +216,20 @@ void CMyApp::Update()
 
 	camera.Update(static_cast<float>(delta_time));
 
+	// Move point lights
+	for (int i = 0; i < NUM_POINT_LIGHTS; ++i)
+	{
+		glm::vec3 toGoal = pointLightNextPositions[i] - pointLightPositions[i];
+		if (glm::length(toGoal) < 2.0f)
+		{
+			pointLightNextPositions[i] = glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
+												   rand() / (double)RAND_MAX * 100.0f + 35.0f,
+												   rand() / (double)RAND_MAX * 700.0f - 350.0f);
+			toGoal = pointLightNextPositions[i] - pointLightPositions[i];
+		}
+		pointLightPositions[i] += glm::normalize(toGoal);
+	}
+
 	last_time = SDL_GetTicks();
 }
 
@@ -216,7 +241,7 @@ void CMyApp::DrawScene()
 	programForwardRenderer.SetUniform("eye_pos", camera.GetEye());
 	programForwardRenderer.SetUniform("Ka", 0.5f);
 	programForwardRenderer.SetUniform("Kd", 0.6f);
-	programForwardRenderer.SetUniform("Ks", 0.05f);
+	programForwardRenderer.SetUniform("Ks", 0.1f);
 	programForwardRenderer.SetUniform("specular_power", 50.0f);
 
 	//programForwardRenderer.SetTexture("texImage", 0, tex_terrain);
@@ -237,8 +262,8 @@ void CMyApp::DrawScene()
 	programForwardRenderer.SetTexture("texImage", 0, tex_rocks);
 	mesh_rocks->draw();
 
-	programForwardRenderer.SetUniform("Kd", 0.6f);
-	programForwardRenderer.SetUniform("Ks", 0.2f);
+	programForwardRenderer.SetUniform("Kd", 0.8f);
+	programForwardRenderer.SetUniform("Ks", 0.8f);
 	programForwardRenderer.SetUniform("specular_power", 30.0f);
 	programForwardRenderer.SetTexture("texImage", 0, tex_water);
 	mesh_water->draw();
@@ -264,6 +289,7 @@ void CMyApp::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	programLightRenderer.Use();
+	glUniform3fv(glGetUniformLocation(programLightRenderer, "lightPositions"), NUM_POINT_LIGHTS, glm::value_ptr(pointLightPositions[0]));
 	programLightRenderer.SetUniform("eye_pos", camera.GetEye());
 	programLightRenderer.SetTexture("colorTexture", 0, colorBuffer);
 	programLightRenderer.SetTexture("normalTexture", 1, normalBuffer);

@@ -23,6 +23,8 @@
 #include "BufferObject.h"
 #include "TextureObject.h"
 
+const static int NUM_POINT_LIGHTS = 100;
+
 class CMyApp
 {
 public:
@@ -75,6 +77,9 @@ protected:
 	std::unique_ptr<Mesh>	mesh_plants;
 	std::unique_ptr<Mesh>	mesh_rocks;
 	std::unique_ptr<Mesh>	mesh_water;
+
+	glm::vec3 pointLightPositions[NUM_POINT_LIGHTS];
+	glm::vec3 pointLightNextPositions[NUM_POINT_LIGHTS];
 
 	double					delta_time;
 };
