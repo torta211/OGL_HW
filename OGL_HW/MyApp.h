@@ -18,18 +18,18 @@
 
 #include "gCamera.h"
 
+#include "Mesh_OGL3.h"
 #include "ProgramObject.h"
 #include "BufferObject.h"
-#include "VertexArrayObject.h"
 #include "TextureObject.h"
 
 class CMyApp
 {
 public:
-	CMyApp(void);
+	CMyApp(int, int);
 	~CMyApp(void);
 
-	bool Init();
+	bool Init(int, int);
 	void Clean();
 
 	void Update();
@@ -43,22 +43,39 @@ public:
 	void MouseWheel(SDL_MouseWheelEvent&);
 	void Resize(int, int);
 protected:
-	gCamera				m_camera;
+	void LoadAssets();
+	void CreateForwardBuffer(int, int);
+	void DrawScene();
 
-	ProgramObject		m_programPixelShader;
-	ProgramObject		m_programSkybox;
+	bool frameBufferCreated;
+	GLuint fbo;
+	GLuint colorBuffer;
+	GLuint normalBuffer;
+	GLuint positionBuffer;
+	GLuint materialBuffer;
+	GLuint depthBuffer;
 
-	VertexArrayObject	m_vao;
-	IndexBuffer			m_gpuBufferIndices;
-	ArrayBuffer			m_gpuBufferPos;
+	gCamera				camera;
 
-	GLuint				m_skyboxTexture;
-	void TextureFromFileAttach(const char* filename, GLuint role) const;
+	ProgramObject		programForwardRenderer;
+	ProgramObject		programLightRenderer;
 
-	float				screenWidth;
-	float				screenHeight;
+	Texture2D			tex_terrain;
+	Texture2D			tex_grass;
+	Texture2D			tex_leaves;
+	Texture2D			tex_stems;
+	Texture2D			tex_plants;
+	Texture2D			tex_rocks;
+	Texture2D			tex_water;
 
-	// variables for calculating real time fps - modified in Update()
-	double				m_delta_time;
+	std::unique_ptr<Mesh>	mesh_terrain;
+	std::unique_ptr<Mesh>	mesh_grass;
+	std::unique_ptr<Mesh>	mesh_leaves;
+	std::unique_ptr<Mesh>	mesh_stems;
+	std::unique_ptr<Mesh>	mesh_plants;
+	std::unique_ptr<Mesh>	mesh_rocks;
+	std::unique_ptr<Mesh>	mesh_water;
+
+	double					delta_time;
 };
 

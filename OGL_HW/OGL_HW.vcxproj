@@ -154,7 +154,9 @@
     <ClInclude Include="BufferObject.h" />
     <ClInclude Include="gCamera.h" />
     <ClInclude Include="GLconversions.hpp" />
+    <ClInclude Include="Mesh_OGL3.h" />
     <ClInclude Include="MyApp.h" />
+    <ClInclude Include="ObjParser_OGL3.h" />
     <ClInclude Include="ProgramObject.h" />
     <ClInclude Include="ShaderObject.h" />
     <ClInclude Include="T:\OGLPack\include\imgui\imconfig.h" />
@@ -168,12 +170,14 @@
     <ClCompile Include="gCamera.cpp" />
     <ClCompile Include="GLconversions.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mesh_OGL3.cpp" />
     <ClCompile Include="MyApp.cpp" />
+    <ClCompile Include="ObjParser_OGL3.cpp" />
     <ClCompile Include="VertexArrayObject.cpp" />
-    <None Include="fractal.frag" />
-    <None Include="fractal.vert" />
-    <None Include="skybox.frag" />
-    <None Include="skybox.vert" />
+    <None Include="deferredPoint.frag" />
+    <None Include="deferredPoint.vert" />
+    <None Include="forward.vert" />
+    <None Include="forward.frag" />
     <None Include="TextureObject.inl">
       <FileType>Document</FileType>
     </None>

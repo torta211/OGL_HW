@@ -10,232 +10,292 @@
 #include <random>
 #include <cmath>
 #include "glm/ext.hpp"
+#include "ObjParser_OGL3.h"
 
-CMyApp::CMyApp(void)
+CMyApp::CMyApp(int w_init, int h_init)
 {
-	m_camera.SetView(glm::vec3(5, 5, 5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	frameBufferCreated = false;
+	camera.SetView(glm::vec3(5, 5, 5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	camera.SetProj(45.0f, float(w_init) / float(h_init), 0.01f, 1000.0f);
+	camera.SetSpeed(50.0f);
 }
-
 
 CMyApp::~CMyApp(void)
 {
 	std::cout << "dtor!\n";
 }
 
-bool CMyApp::Init()
-{	
-	std::cout << "Card used: " << glGetString(GL_RENDERER) << "\n";
-	// Query aspect ratio
-	double viewPortParams[4];
-	glGetDoublev(GL_VIEWPORT, viewPortParams);
-	screenWidth = (float)viewPortParams[2];
-	screenHeight = (float)viewPortParams[3];
+void CMyApp::LoadAssets()
+{
+	//mesh_terrain = ObjParser::parse("terrain.obj");
+	//tex_terrain.FromFile("sand.jpg");
+	//std::cout << "terrain assets loaded\n";
 
-	// Clear color will be blueish
-	glClearColor(0.125f, 0.25f, 0.5f, 1.0f);
+	mesh_grass = ObjParser::parse("grass.obj");
+	tex_grass.FromFile("grass.jpg");
+	std::cout << "grass assets loaded\n";
 
-	// Enable depth test
-	// We keep both faces of each fragment
-	glEnable(GL_DEPTH_TEST);
+	mesh_leaves = ObjParser::parse("leaves.obj");
+	tex_leaves.FromFile("leave.jpg");
+	std::cout << "leaves assets loaded\n";
 
-	// Fast creation of shader programs (3 function calls inside a single call)
-	m_programPixelShader.Init(
+	mesh_stems = ObjParser::parse("stems.obj");
+	tex_stems.FromFile("palmstem.jpg");
+	std::cout << "stems assets loaded\n";
+
+	mesh_plants = ObjParser::parse("plants.obj");
+	tex_plants.FromFile("plant.jpg");
+	std::cout << "plants assets loaded\n";
+
+	mesh_rocks = ObjParser::parse("rocks.obj");
+	tex_rocks.FromFile("rock.jpg");
+	std::cout << "rocks assets loaded\n";
+
+	mesh_water = ObjParser::parse("water.obj");
+	tex_water.FromFile("water.jpg");
+	std::cout << "water assets loaded\n";
+}
+
+inline void setTexture2DParameters(GLenum magfilter = GL_LINEAR, GLenum minfilter = GL_LINEAR, GLenum wrap_s = GL_CLAMP_TO_EDGE, GLenum wrap_t = GL_CLAMP_TO_EDGE)
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magfilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minfilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_s);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_t);
+}
+
+void CMyApp::CreateForwardBuffer(int width, int height)
+{
+	// Clear if the function is not being called for the first time
+	if (frameBufferCreated)
 	{
-		{ GL_VERTEX_SHADER, "fractal.vert" },
-		{ GL_FRAGMENT_SHADER, "fractal.frag" }
-	},
-	{
-		{ 0, "vs_in_pos" },
+		glDeleteTextures(1, &colorBuffer);
+		glDeleteTextures(1, &normalBuffer);
+		glDeleteTextures(1, &positionBuffer);
+		glDeleteTextures(1, &materialBuffer);
+		glDeleteRenderbuffers(1, &depthBuffer);
+		glDeleteFramebuffers(1, &fbo);
 	}
-	);
-	m_programSkybox.Init(
+
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+	// (Attachment 0.) Target for the base (texture) color of pixels
+	glGenTextures(1, &colorBuffer);
+	glBindTexture(GL_TEXTURE_2D, colorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_FLOAT, nullptr); // last 3 parameters are only for initial values
+	setTexture2DParameters(GL_NEAREST, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
+	if (glGetError() != GL_NO_ERROR) {
+		std::cout << "Error creating color attachment 0" << GLenum(glGetError()) << std::endl;
+		exit(1);
+	}
+
+	// (Attachment 1.) Target for normal vectors of pixels
+	glGenTextures(1, &normalBuffer);
+	glBindTexture(GL_TEXTURE_2D, normalBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16_SNORM, width, height, 0, GL_RGBA, GL_FLOAT, nullptr); // last 3 parameters are only for initial values
+	setTexture2DParameters(GL_NEAREST, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normalBuffer, 0);
+	if (glGetError() != GL_NO_ERROR) {
+		std::cout << "Error creating color attachment 1" << std::endl;
+		exit(1);
+	}
+
+	// (Attachment 2.) Target for world coordinates of pixels
+	glGenTextures(1, &positionBuffer);
+	glBindTexture(GL_TEXTURE_2D, positionBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr); // last 3 parameters are only for initial values
+	setTexture2DParameters(GL_NEAREST, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, positionBuffer, 0);
+	if (glGetError() != GL_NO_ERROR) {
+		std::cout << "Error creating color attachment 2" << std::endl;
+		exit(1);
+	}
+
+	// (Attachment 3.) Target for material properties of pixels
+	glGenTextures(1, &materialBuffer);
+	glBindTexture(GL_TEXTURE_2D, materialBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr); // last 3 parameters are only for initial values
+	setTexture2DParameters(GL_NEAREST, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D, materialBuffer, 0);
+	if (glGetError() != GL_NO_ERROR) {
+		std::cout << "Error creating color attachment 3" << std::endl;
+		exit(1);
+	}
+
+	// Depth renderbuffer
+	glGenRenderbuffers(1, &depthBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+	if (glGetError() != GL_NO_ERROR) {
+		std::cout << "Error creating depth attachment" << std::endl;
+		exit(1);
+	}
+
+	//Specifying which color outputs are active
+	GLenum drawBuffers[4] = { GL_COLOR_ATTACHMENT0,
+							  GL_COLOR_ATTACHMENT1,
+							  GL_COLOR_ATTACHMENT2,
+							  GL_COLOR_ATTACHMENT3 };
+	glDrawBuffers(4, drawBuffers);
+
+	// Completeness check
+	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (status != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Incomplete framebuffer (";
+		switch (status)
 		{
-			{ GL_VERTEX_SHADER, "skybox.vert" },
-			{ GL_FRAGMENT_SHADER, "skybox.frag" }
-		},
-	{
-		{ 0, "vs_in_pos" },
+		case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+			std::cout << "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+			break;
+		case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+			std::cout << "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+			break;
+		case GL_FRAMEBUFFER_UNSUPPORTED:
+			std::cout << "GL_FRAMEBUFFER_UNSUPPORTED";	
+			break;
+		}
+		std::cout << ")" << std::endl;
+		exit(1);
 	}
-	);
 
+	// Unbind framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	frameBufferCreated = true;
+}
 
-	//
-	// Defining geometry (std::vector<...>) and upload to GPU buffers (m_buffer*) with BufferData
-	//
+bool CMyApp::Init(int w_init, int h_init)
+{	
+	// Set clear color
+	glClearColor(0.2f, 0.4f, 0.7f, 1);
+	// For this scene we just keep all faces
+	//glEnable(GL_CULL_FACE);
 
-	// Position of vertices:
-	/*
-	The constructor of m_gpuBufferPos has already created a GPU buffer identifier, and the following BufferData call will
-	1. bind this to GL_ARRAY_BUFFER (because the type of m_gpuBufferPos is ArrayBuffer) and
-	2. upload the values of the container given in the argument to the GPU by calling glBufferData
-	*/
-	m_gpuBufferPos.BufferData(
-		std::vector<glm::vec3>{
-			// square on z = -1
-			glm::vec3(-1, -1, -1),
-			glm::vec3(1, -1, -1),
-			glm::vec3(1, 1, -1),
-			glm::vec3(-1, 1, -1),
-			// square on z = 1
-			glm::vec3(-1, -1, 1),
-			glm::vec3(1, -1, 1),
-			glm::vec3(1, 1, 1),
-			glm::vec3(-1, 1, 1),
-	}
-	);
+	programForwardRenderer.Init({
+		{ GL_VERTEX_SHADER, "forward.vert" },
+		{ GL_FRAGMENT_SHADER, "forward.frag" }
+	});
 
-	// And the indices which the primitives are constructed by (from the arrays defined above) - prepared to draw them as a triangle list
-	m_gpuBufferIndices.BufferData(
-		std::vector<int>{
-			// fullscreen quad and back face of cubemap
-			0, 1, 2, 2, 3, 0,
-			// other cubemap faces
-			4, 6, 5, 6, 4, 7,
-			0, 3, 4, 4, 3, 7,
-			1, 5, 2, 5, 6, 2,
-			1, 0, 4, 1, 4, 5,
-			3, 2, 6, 3, 6, 7,
-	}
-	);
+	programLightRenderer.Init({
+		{ GL_VERTEX_SHADER, "deferredPoint.vert" },
+		{ GL_FRAGMENT_SHADER, "deferredPoint.frag" }
+	});
 
-	// Registering geometry in VAO
-	m_vao.Init(
-	{
-		// Attribute 0 is "practically" an array of glm::vec3 and the data is in the GPU buffer (m_gpuBufferPos)
-		{ CreateAttribute<		0,						// Channel 0
-								glm::vec3,				// CPU-side data type which is used to define attributes of channel 0 <- the procedure deducts that the attribute 0 is made of 3 floats from the glm::vec3
-								0,						// offset: The offset of the attribute, considered from the beginning of the container
-								sizeof(glm::vec3)		// stride: This attribute of the next vertex will be this many bytes from the current
-							>, m_gpuBufferPos },		
-	},
-	m_gpuBufferIndices
-	);
+	LoadAssets();
 
-	// Skybox
-	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-	glGenTextures(1, &m_skyboxTexture);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, m_skyboxTexture);
-
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-	TextureFromFileAttach("xpos.png", GL_TEXTURE_CUBE_MAP_POSITIVE_X);
-	TextureFromFileAttach("xneg.png", GL_TEXTURE_CUBE_MAP_NEGATIVE_X);
-	TextureFromFileAttach("ypos.png", GL_TEXTURE_CUBE_MAP_POSITIVE_Y);
-	TextureFromFileAttach("yneg.png", GL_TEXTURE_CUBE_MAP_NEGATIVE_Y);
-	TextureFromFileAttach("zpos.png", GL_TEXTURE_CUBE_MAP_POSITIVE_Z);
-	TextureFromFileAttach("zneg.png", GL_TEXTURE_CUBE_MAP_NEGATIVE_Z);
-
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-	// Camera
-	m_camera.SetProj(45.0f, 640.0f / 480.0f, 0.01f, 1000.0f);
+	CreateForwardBuffer(w_init, h_init);
 
 	return true;
 }
 
-void CMyApp::TextureFromFileAttach(const char* filename, GLuint role) const
-{
-	SDL_Surface* loaded_img = IMG_Load(filename);
-
-	int img_mode = 0;
-
-	if (loaded_img == 0)
-	{
-		std::cout << "[TextureFromFile] Error loading the image: " << filename << std::endl;
-		return;
-	}
-
-#if SDL_BYTEORDER == SDL_LIL_ENDIAN
-	if (loaded_img->format->BytesPerPixel == 4)
-		img_mode = GL_BGRA;
-	else
-		img_mode = GL_BGR;
-#else
-	if (loaded_img->format->BytesPerPixel == 4)
-		img_mode = GL_RGBA;
-	else
-		img_mode = GL_RGB;
-#endif
-
-	glTexImage2D(role, 0, GL_RGBA, loaded_img->w, loaded_img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, loaded_img->pixels);
-
-	SDL_FreeSurface(loaded_img);
-}
 
 void CMyApp::Clean()
 {
-	glDeleteTextures(1, &m_skyboxTexture);
+	//glDeleteTextures();
 }
 
 void CMyApp::Update()
 {
 	// static declaration runs only once per application
 	static Uint32 last_time = SDL_GetTicks();
-	m_delta_time = (SDL_GetTicks() - last_time) / 1000.0f;
+	delta_time = (SDL_GetTicks() - last_time) / 1000.0f;
 
-	m_camera.Update(static_cast<float>(m_delta_time));
+	camera.Update(static_cast<float>(delta_time));
 
 	last_time = SDL_GetTicks();
 }
 
+void CMyApp::DrawScene()
+{
+	programForwardRenderer.Use();
+
+	programForwardRenderer.SetUniform("MVP", camera.GetViewProj());
+	programForwardRenderer.SetUniform("eye_pos", camera.GetEye());
+	programForwardRenderer.SetUniform("Ka", 0.5f);
+	programForwardRenderer.SetUniform("Kd", 0.6f);
+	programForwardRenderer.SetUniform("Ks", 0.05f);
+	programForwardRenderer.SetUniform("specular_power", 50.0f);
+
+	//programForwardRenderer.SetTexture("texImage", 0, tex_terrain);
+	//mesh_terrain->draw();
+	programForwardRenderer.SetTexture("texImage", 0, tex_grass);
+	mesh_grass->draw();
+
+	programForwardRenderer.SetTexture("texImage", 0, tex_leaves);
+	mesh_leaves->draw();
+
+	programForwardRenderer.SetTexture("texImage", 0, tex_stems);
+	mesh_stems->draw();
+
+	programForwardRenderer.SetTexture("texImage", 0, tex_plants);
+	mesh_plants->draw();
+
+	programForwardRenderer.SetUniform("Kd", 0.2f);
+	programForwardRenderer.SetTexture("texImage", 0, tex_rocks);
+	mesh_rocks->draw();
+
+	programForwardRenderer.SetUniform("Kd", 0.6f);
+	programForwardRenderer.SetUniform("Ks", 0.2f);
+	programForwardRenderer.SetUniform("specular_power", 30.0f);
+	programForwardRenderer.SetTexture("texImage", 0, tex_water);
+	mesh_water->draw();
+
+	programForwardRenderer.Unuse();
+}
+
 void CMyApp::Render()
 {
-	// Delete the frame buffer (GL_COLOR_BUFFER_BIT) and the depth (Z) buffer (GL_DEPTH_BUFFER_BIT)
+	// "Forward rendering": rendering the geometry into the framebuffer's attachements
+	// Bind target
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	// Clear it
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Enable depth test for this
+	glEnable(GL_DEPTH_TEST);
+	// Run shader program
+	DrawScene();
+
+	// Lights
+	// Bind back the frontbuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	m_vao.Bind();
+	programLightRenderer.Use();
+	programLightRenderer.SetUniform("eye_pos", camera.GetEye());
+	programLightRenderer.SetTexture("colorTexture", 0, colorBuffer);
+	programLightRenderer.SetTexture("normalTexture", 1, normalBuffer);
+	programLightRenderer.SetTexture("positionTexture", 2, positionBuffer);
+	programLightRenderer.SetTexture("materialTexture", 3, materialBuffer);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-	// Pixel shading shadertoy style
-	m_programPixelShader.Use();
-	m_programPixelShader.SetUniform("cam_pos", m_camera.GetEye());
-	m_programPixelShader.SetUniform("cam_forward", m_camera.GetForward());
-	m_programPixelShader.SetUniform("cam_up", m_camera.GetUp());
-	m_programPixelShader.SetUniform("cam_right", m_camera.GetRight());
-	m_programPixelShader.SetUniform("screen_width", screenWidth);
-	m_programPixelShader.SetUniform("screen_height", screenHeight);
-	m_programPixelShader.SetUniform("time", SDL_GetTicks());
-
-	
-	// For this we only use the first 2 triangles
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-
-	// Rendering the cubemap (skybox)
-	// Save previous depth function
-	GLint prevDepthFnc;
-	glGetIntegerv(GL_DEPTH_FUNC, &prevDepthFnc);
-	// Set less than equal
-	glDepthFunc(GL_LEQUAL);
-	// Shader program
-	m_programSkybox.Use();
-	m_programSkybox.SetUniform("MVP", m_camera.GetViewProj() * glm::translate(m_camera.GetEye()));
-	// Set cubemap texture
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, m_skyboxTexture);
-	glUniform1i(m_programSkybox.GetLocation("skyboxTexture"), 0);
-	// Draw all triangles in the vao
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-	// set back depth function
-	glDepthFunc(prevDepthFnc);
+	ImGui::SetNextWindowPos(ImVec2(300, 400), ImGuiSetCond_FirstUseEver);
+	if (ImGui::Begin("Test window")) // Note that ImGui returns false when window is collapsed so we can early-out
+	{
+		ImGui::Image((ImTextureID)colorBuffer, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+		ImGui::Image((ImTextureID)normalBuffer, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+		ImGui::Image((ImTextureID)positionBuffer, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+		ImGui::Image((ImTextureID)materialBuffer, ImVec2(256, 256), ImVec2(0, 1), ImVec2(1, 0));
+	}
+	ImGui::End(); // In either case, ImGui::End() needs to be called for ImGui::Begin().
+		// Note that other commands may work differently and may not need an End* if Begin* returned false.
 }
 
 void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 {
-	m_camera.KeyboardDown(key);
+	camera.KeyboardDown(key);
 }
 
 void CMyApp::KeyboardUp(SDL_KeyboardEvent& key)
 {
-	m_camera.KeyboardUp(key);
+	camera.KeyboardUp(key);
 }
 
 void CMyApp::MouseMove(SDL_MouseMotionEvent& mouse)
 {
-	m_camera.MouseMove(mouse);
+	camera.MouseMove(mouse);
 }
 
 void CMyApp::MouseDown(SDL_MouseButtonEvent& mouse)
@@ -254,8 +314,7 @@ void CMyApp::MouseWheel(SDL_MouseWheelEvent& wheel)
 void CMyApp::Resize(int _w, int _h)
 {
 	glViewport(0, 0, _w, _h );
-
-	m_camera.Resize(_w, _h);
-	screenWidth = float(_w);
-	screenHeight = float(_h);
+	camera.Resize(_w, _h);
+	CreateForwardBuffer(_w, _h);
+	std::cout << "new width = " << _w << " | new height = " << _h << "\n";
 }

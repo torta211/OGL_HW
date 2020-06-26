@@ -15,6 +15,11 @@
 
 #include "MyApp.h"
 
+// Starting window size
+static const int INIT_WIDTH = 640;
+static const int INIT_HEIGHT = 480;
+
+// This switches to dedicated graphics card on some laptops
 extern "C"
 {
 	__declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -71,13 +76,11 @@ int main( int argc, char* args[] )
 
 	// Create our window
 	SDL_Window *win = 0;
-	int init_width = 640;
-	int init_height = 480;
     win = SDL_CreateWindow( "Hello SDL&OpenGL!",		// az ablak fejléce
 							100,						// az ablak bal-felsõ sarkának kezdeti X koordinátája
 							100,						// az ablak bal-felsõ sarkának kezdeti Y koordinátája
-							init_width,					// ablak szélessége
-							init_height,				// és magassága
+							INIT_WIDTH,					// ablak szélessége
+							INIT_HEIGHT,				// és magassága
 							SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);			// megjelenítési tulajdonságok
 
 
@@ -115,6 +118,7 @@ int main( int argc, char* args[] )
 	glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]); 
 	glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]); 
 	std::cout << "Running OpenGL " << glVersion[0] << "." << glVersion[1] << std::endl;
+	std::cout << "Card used: " << glGetString(GL_RENDERER) << "\n";
 
 	if ( glVersion[0] == -1 && glVersion[1] == -1 )
 	{
@@ -143,8 +147,8 @@ int main( int argc, char* args[] )
 		SDL_Event ev;
 
 		// Instance of the application
-		CMyApp app;
-		if (!app.Init())
+		CMyApp app(INIT_WIDTH, INIT_HEIGHT);
+		if (!app.Init(INIT_WIDTH, INIT_HEIGHT))
 		{
 			SDL_GL_DeleteContext(context);
 			SDL_DestroyWindow(win);
