@@ -22,6 +22,9 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{28dd15bc-57f1-4d1a-a7b0-1f36df3fc779}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Sphere">
+      <UniqueIdentifier>{2ae27ca7-a5a7-485b-8e55-17c8687980a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -45,9 +48,6 @@
     <ClInclude Include="TextureObject.h">
       <Filter>GL utilities</Filter>
     </ClInclude>
-    <ClInclude Include="gCamera.h">
-      <Filter>GL utilities</Filter>
-    </ClInclude>
     <ClInclude Include="T:\OGLPack\include\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
@@ -59,6 +59,15 @@
     </ClInclude>
     <ClInclude Include="T:\OGLPack\include\imgui\imgui_internal.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh_OGL3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjParser_OGL3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="gCamera.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -90,6 +99,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ObjParser_OGL3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh_OGL3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="gCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -107,16 +122,40 @@
     <None Include="TextureObject.inl">
       <Filter>GL utilities</Filter>
     </None>
-    <None Include="fractal.frag">
+    <None Include="forward.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="fractal.vert">
+    <None Include="forward.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="skybox.vert">
+    <None Include="deferredPoint.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="skybox.frag">
+    <None Include="deferredPoint.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="sphere.tes">
+      <Filter>Shaders\Sphere</Filter>
+    </None>
+    <None Include="sphere.vert">
+      <Filter>Shaders\Sphere</Filter>
+    </None>
+    <None Include="sphere.frag">
+      <Filter>Shaders\Sphere</Filter>
+    </None>
+    <None Include="sphere.tcs">
+      <Filter>Shaders\Sphere</Filter>
+    </None>
+    <None Include="shadow_map.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shadow_map.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="directionalLight.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="directionalLight.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

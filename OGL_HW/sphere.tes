@@ -1,0 +1,38 @@
+#version 420
+
+layout (quads, equal_spacing) in;
+
+in block
+{
+	vec3	pos;
+	float	rad;
+	vec3	color;
+} In[];
+
+out block
+{
+	vec3	pos;
+	vec3	color;
+	vec3	n;
+	vec3	patch_coords;
+} Out;
+
+uniform mat4 MVP;
+
+void main()
+{
+	vec2 uv = vec2(2*3.1415f, 3.1415f)*gl_TessCoord.xy;
+	float u = uv.x;
+	float v = uv.y;
+
+	float cu = cos(u), su = sin(u), cv = cos(v), sv = sin(v);
+	vec3 add = In[0].rad * vec3(cu * sv, cv, su * sv);
+	vec3 pt = In[0].pos + add;
+	
+	gl_Position = MVP * vec4(pt, 1);
+
+	Out.pos = pt.xyz;
+	Out.color = In[0].color;
+	Out.n   = normalize(add);
+	Out.patch_coords = gl_TessCoord.xyz;
+}

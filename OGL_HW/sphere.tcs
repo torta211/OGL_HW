@@ -1,0 +1,34 @@
+#version 420
+
+layout(vertices = 1) out;
+
+in block
+{
+	vec3	pos;
+	float	rad;
+	vec3	color;
+} In[];
+
+out block
+{
+	vec3	pos;
+	float	rad;
+	vec3	color;
+} Out[];
+
+uniform float tess_level = 32;
+
+void main()
+{
+	gl_TessLevelInner[0] = tess_level;
+	gl_TessLevelInner[1] = tess_level;
+
+	gl_TessLevelOuter[0] = tess_level;
+	gl_TessLevelOuter[1] = tess_level;
+	gl_TessLevelOuter[2] = tess_level;
+	gl_TessLevelOuter[3] = tess_level;
+
+	Out[gl_InvocationID].pos = In[gl_InvocationID].pos;
+	Out[gl_InvocationID].rad = In[gl_InvocationID].rad;
+	Out[gl_InvocationID].color = In[gl_InvocationID].color;
+}

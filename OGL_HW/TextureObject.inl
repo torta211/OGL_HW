@@ -65,23 +65,16 @@ inline void TextureObject<type>::AttachFromFile(const std::string& filename, boo
 		return;
 	}
 
-#if SDL_BYTEORDER == SDL_LIL_ENDIAN
-	if (loaded_img->format->BytesPerPixel == 4)
-		img_mode = GL_BGRA;
-	else
-		img_mode = GL_BGR;
-#else
 	if (loaded_img->format->BytesPerPixel == 4)
 		img_mode = GL_RGBA;
 	else
 		img_mode = GL_RGB;
-#endif
 
 	glBindTexture(static_cast<GLenum>(type), m_id);
 	glTexImage2D(
 		static_cast<GLenum>(type),		// melyik binding point-on van a textúra erõforrás, amihez tárolást rendelünk
 		0,								// melyik részletességi szint adatait határozzuk meg
-		GL_RGB,							// textúra belsõ tárolási formátuma (GPU-n)
+		GL_RGBA8,						// textúra belsõ tárolási formátuma (GPU-n)
 		loaded_img->w, loaded_img->h,	// szélesség, magasság
 		0,								// nulla kell, hogy legyen ( https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glTexImage2D.xhtml )
 		img_mode,						// forrás (=CPU-n) formátuma
