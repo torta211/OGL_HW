@@ -350,7 +350,7 @@ void CMyApp::DrawScene(glm::mat4 waterLevel)
 	mesh_rocks->draw();
 
 	programForwardRenderer.SetUniform("Kd", 0.8f);
-	programForwardRenderer.SetUniform("Ks", 0.8f);
+	programForwardRenderer.SetUniform("Ks", 1.0f);
 	programForwardRenderer.SetUniform("specular_power", 30.0f);
 	programForwardRenderer.SetUniform("world", waterLevel);
 	programForwardRenderer.SetUniform("MVP", camera.GetViewProj() * waterLevel);

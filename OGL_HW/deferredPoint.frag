@@ -37,7 +37,7 @@ void main()
 			float strength = unscaledStrength * unscaledStrength * unscaledStrength * 50.0f / (length(toLight) * length(toLight));
 			if (strength > 0.02f)
 			{
-				vec4 La = vec4(0.1 * normalize(lightColors[i]), 1.0f);
+				vec4 La = vec4(0.5 * normalize(lightColors[i]), 1.0f);
 				vec4 Ld = vec4(0.8 * normalize(lightColors[i]), 1.0f);
 				vec4 Ls = vec4(0.6 * normalize(lightColors[i]), 1.0f);
 				
