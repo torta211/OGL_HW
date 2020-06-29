@@ -176,8 +176,12 @@
     <ClCompile Include="VertexArrayObject.cpp" />
     <None Include="deferredPoint.frag" />
     <None Include="deferredPoint.vert" />
+    <None Include="directionalLight.frag" />
+    <None Include="directionalLight.vert" />
     <None Include="forward.vert" />
     <None Include="forward.frag" />
+    <None Include="shadow_map.frag" />
+    <None Include="shadow_map.vert" />
     <None Include="sphere.frag" />
     <None Include="sphere.tcs" />
     <None Include="sphere.tes" />

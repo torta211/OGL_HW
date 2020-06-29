@@ -6,11 +6,13 @@ in block
 {
 	vec3	pos;
 	float	rad;
+	vec3	color;
 } In[];
 
 out block
 {
 	vec3	pos;
+	vec3	color;
 	vec3	n;
 	vec3	patch_coords;
 } Out;
@@ -24,11 +26,13 @@ void main()
 	float v = uv.y;
 
 	float cu = cos(u), su = sin(u), cv = cos(v), sv = sin(v);
-	vec3 pt = In[0].pos + In[0].rad*vec3( cu*sv, cv, su*sv );
+	vec3 add = In[0].rad * vec3(cu * sv, cv, su * sv);
+	vec3 pt = In[0].pos + add;
 	
-	gl_Position = MVP*vec4(pt, 1);
+	gl_Position = MVP * vec4(pt, 1);
 
-	Out.pos = (vec4(pt,1)).xyz;
-	Out.n   = (vec4(pt,0)).xyz;
+	Out.pos = pt.xyz;
+	Out.color = In[0].color;
+	Out.n   = normalize(add);
 	Out.patch_coords = gl_TessCoord.xyz;
 }

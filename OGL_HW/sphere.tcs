@@ -6,12 +6,14 @@ in block
 {
 	vec3	pos;
 	float	rad;
+	vec3	color;
 } In[];
 
 out block
 {
 	vec3	pos;
 	float	rad;
+	vec3	color;
 } Out[];
 
 uniform float tess_level = 32;
@@ -28,4 +30,5 @@ void main()
 
 	Out[gl_InvocationID].pos = In[gl_InvocationID].pos;
 	Out[gl_InvocationID].rad = In[gl_InvocationID].rad;
+	Out[gl_InvocationID].color = In[gl_InvocationID].color;
 }

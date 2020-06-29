@@ -148,7 +148,7 @@ int main( int argc, char* args[] )
 
 		// Instance of the application
 		CMyApp app(INIT_WIDTH, INIT_HEIGHT);
-		if (!app.Init(INIT_WIDTH, INIT_HEIGHT))
+		if (!app.Init())
 		{
 			SDL_GL_DeleteContext(context);
 			SDL_DestroyWindow(win);

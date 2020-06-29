@@ -146,5 +146,17 @@
     <None Include="sphere.tcs">
       <Filter>Shaders\Sphere</Filter>
     </None>
+    <None Include="shadow_map.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shadow_map.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="directionalLight.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="directionalLight.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -25,6 +25,7 @@
 #include "TextureObject.h"
 
 const static unsigned int NUM_POINT_LIGHTS = 100;
+const static int DIR_SHADOW_MAP_RES = 2048;
 
 class CMyApp
 {
@@ -32,7 +33,7 @@ public:
 	CMyApp(int, int);
 	~CMyApp(void);
 
-	bool Init(int, int);
+	bool Init();
 	void Clean();
 
 	void Update();
@@ -47,30 +48,38 @@ public:
 	void Resize(int, int);
 protected:
 	void LoadAssets();
-	void CreateForwardBuffer(int, int);
-	void DrawScene();
+	void CreateFrameBuffers();
+	void DrawScene(glm::mat4);
 
-	bool frameBufferCreated;
-	GLuint fbo;
-	GLuint colorBuffer;
-	GLuint normalBuffer;
-	GLuint positionBuffer;
-	GLuint materialBuffer;
-	GLuint depthBuffer;
+	int						width;
+	int						height;
+	bool					frameBufferCreated;
 
-	gCamera				camera;
+	GLuint					shadow_fbo;
+	GLuint					shadow_depth_texture;
 
-	ProgramObject		programForwardRenderer;
-	ProgramObject		programLightRenderer;
-	ProgramObject		programLightSpheres;
+	GLuint					fbo;
+	GLuint					colorBuffer;
+	GLuint					normalBuffer;
+	GLuint					positionBuffer;
+	GLuint					materialBuffer;
+	GLuint					depthBuffer;
 
-	Texture2D			tex_terrain;
-	Texture2D			tex_grass;
-	Texture2D			tex_leaves;
-	Texture2D			tex_stems;
-	Texture2D			tex_plants;
-	Texture2D			tex_rocks;
-	Texture2D			tex_water;
+	gCamera					camera;
+
+	ProgramObject			programForwardRenderer;
+	ProgramObject			programLightRenderer;
+	ProgramObject			programLightSpheres;
+	ProgramObject			programShadowMapper;
+	ProgramObject			programDirectionalLight;
+
+	Texture2D				tex_terrain;
+	Texture2D				tex_grass;
+	Texture2D				tex_leaves;
+	Texture2D				tex_stems;
+	Texture2D				tex_plants;
+	Texture2D				tex_rocks;
+	Texture2D				tex_water;
 
 	std::unique_ptr<Mesh>	mesh_terrain;
 	std::unique_ptr<Mesh>	mesh_grass;
@@ -80,12 +89,15 @@ protected:
 	std::unique_ptr<Mesh>	mesh_rocks;
 	std::unique_ptr<Mesh>	mesh_water;
 
-	std::vector<glm::vec3> pointLightPositions;
-	std::vector<glm::vec3> pointLightNextPositions;
-	ArrayBuffer spherePositions;
-	VertexArrayObject spheres_vao;
+	std::vector<glm::vec3>	pointLightPositions;
+	std::vector<glm::vec3>	pointLightNextPositions;
+	std::vector<float>		pointLightStrengths;
+	std::vector<glm::vec3>	pointLightColors;
+	ArrayBuffer				spherePositions;
+	VertexArrayObject		spheres_vao;
 
 	double					delta_time;
+	float					t;
 	bool					frozen;
 };
 
