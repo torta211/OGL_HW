@@ -21,9 +21,10 @@
 #include "Mesh_OGL3.h"
 #include "ProgramObject.h"
 #include "BufferObject.h"
+#include "VertexArrayObject.h"
 #include "TextureObject.h"
 
-const static int NUM_POINT_LIGHTS = 100;
+const static unsigned int NUM_POINT_LIGHTS = 100;
 
 class CMyApp
 {
@@ -61,6 +62,7 @@ protected:
 
 	ProgramObject		programForwardRenderer;
 	ProgramObject		programLightRenderer;
+	ProgramObject		programLightSpheres;
 
 	Texture2D			tex_terrain;
 	Texture2D			tex_grass;
@@ -78,9 +80,12 @@ protected:
 	std::unique_ptr<Mesh>	mesh_rocks;
 	std::unique_ptr<Mesh>	mesh_water;
 
-	glm::vec3 pointLightPositions[NUM_POINT_LIGHTS];
-	glm::vec3 pointLightNextPositions[NUM_POINT_LIGHTS];
+	std::vector<glm::vec3> pointLightPositions;
+	std::vector<glm::vec3> pointLightNextPositions;
+	ArrayBuffer spherePositions;
+	VertexArrayObject spheres_vao;
 
 	double					delta_time;
+	bool					frozen;
 };
 

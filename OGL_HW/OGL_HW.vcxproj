@@ -178,6 +178,10 @@
     <None Include="deferredPoint.vert" />
     <None Include="forward.vert" />
     <None Include="forward.frag" />
+    <None Include="sphere.frag" />
+    <None Include="sphere.tcs" />
+    <None Include="sphere.tes" />
+    <None Include="sphere.vert" />
     <None Include="TextureObject.inl">
       <FileType>Document</FileType>
     </None>

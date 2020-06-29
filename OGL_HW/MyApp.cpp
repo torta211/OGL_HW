@@ -15,6 +15,7 @@
 CMyApp::CMyApp(int w_init, int h_init)
 {
 	frameBufferCreated = false;
+	frozen = false;
 	camera.SetView(glm::vec3(5, 5, 5), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
 	camera.SetProj(45.0f, float(w_init) / float(h_init), 0.01f, 1000.0f);
 	camera.SetSpeed(50.0f);
@@ -184,17 +185,24 @@ bool CMyApp::Init(int w_init, int h_init)
 		{ GL_FRAGMENT_SHADER, "deferredPoint.frag" }
 	});
 
+	programLightSpheres.Init({
+		{ GL_VERTEX_SHADER,			"sphere.vert"},
+		{ GL_TESS_CONTROL_SHADER,	"sphere.tcs" },
+		{ GL_TESS_EVALUATION_SHADER,"sphere.tes" },
+		{ GL_FRAGMENT_SHADER,		"sphere.frag"}
+	});
+
 	LoadAssets();
 
 	// Create point lights
 	for (int i = 0; i < NUM_POINT_LIGHTS; ++i)
 	{
-		pointLightPositions[i] = glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
-										   rand() / (double)RAND_MAX * 100.0f + 35.0f,
-										   rand() / (double)RAND_MAX * 700.0f - 350.0f);
-		pointLightNextPositions[i] = glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
-											   rand() / (double)RAND_MAX * 100.0f + 35.0f,
-											   rand() / (double)RAND_MAX * 700.0f - 350.0f);
+		pointLightPositions.push_back(glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
+												rand() / (double)RAND_MAX * 100.0f + 35.0f,
+												rand() / (double)RAND_MAX * 700.0f - 350.0f));
+		pointLightNextPositions.push_back(glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
+													rand() / (double)RAND_MAX * 100.0f + 35.0f,
+													rand() / (double)RAND_MAX * 700.0f - 350.0f));
 	}
 
 	CreateForwardBuffer(w_init, h_init);
@@ -216,18 +224,21 @@ void CMyApp::Update()
 
 	camera.Update(static_cast<float>(delta_time));
 
-	// Move point lights
-	for (int i = 0; i < NUM_POINT_LIGHTS; ++i)
+	if (!frozen)
 	{
-		glm::vec3 toGoal = pointLightNextPositions[i] - pointLightPositions[i];
-		if (glm::length(toGoal) < 2.0f)
+		// Move point lights
+		for (int i = 0; i < NUM_POINT_LIGHTS; ++i)
 		{
-			pointLightNextPositions[i] = glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
-												   rand() / (double)RAND_MAX * 100.0f + 35.0f,
-												   rand() / (double)RAND_MAX * 700.0f - 350.0f);
-			toGoal = pointLightNextPositions[i] - pointLightPositions[i];
+			glm::vec3 toGoal = pointLightNextPositions[i] - pointLightPositions[i];
+			if (glm::length(toGoal) < 2.0f)
+			{
+				pointLightNextPositions[i] = glm::vec3(rand() / (double)RAND_MAX * 700.0f - 350.0f,
+					rand() / (double)RAND_MAX * 100.0f + 35.0f,
+					rand() / (double)RAND_MAX * 700.0f - 350.0f);
+				toGoal = pointLightNextPositions[i] - pointLightPositions[i];
+			}
+			pointLightPositions[i] += glm::normalize(toGoal);
 		}
-		pointLightPositions[i] += glm::normalize(toGoal);
 	}
 
 	last_time = SDL_GetTicks();
@@ -269,6 +280,15 @@ void CMyApp::DrawScene()
 	mesh_water->draw();
 
 	programForwardRenderer.Unuse();
+
+	// put on lights
+	programLightSpheres.Use();
+	programLightSpheres.SetUniform("MVP", camera.GetViewProj());
+	programLightSpheres.SetUniform("tess_level", 15.0f);
+	glUniform3fv(glGetUniformLocation(programLightSpheres, "lightPoints"), NUM_POINT_LIGHTS, glm::value_ptr(pointLightPositions.front()));
+	glPatchParameteri(GL_PATCH_VERTICES, 1);
+	glDrawArrays(GL_PATCHES, 0, NUM_POINT_LIGHTS);
+	programLightSpheres.Unuse();
 }
 
 void CMyApp::Render()
@@ -289,7 +309,7 @@ void CMyApp::Render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	programLightRenderer.Use();
-	glUniform3fv(glGetUniformLocation(programLightRenderer, "lightPositions"), NUM_POINT_LIGHTS, glm::value_ptr(pointLightPositions[0]));
+	glUniform3fv(glGetUniformLocation(programLightRenderer, "lightPositions"), NUM_POINT_LIGHTS, glm::value_ptr(pointLightPositions.front()));
 	programLightRenderer.SetUniform("eye_pos", camera.GetEye());
 	programLightRenderer.SetTexture("colorTexture", 0, colorBuffer);
 	programLightRenderer.SetTexture("normalTexture", 1, normalBuffer);
@@ -311,6 +331,10 @@ void CMyApp::Render()
 
 void CMyApp::KeyboardDown(SDL_KeyboardEvent& key)
 {
+	if (key.keysym.sym == SDLK_f)
+	{
+		frozen = !frozen;
+	}
 	camera.KeyboardDown(key);
 }
 
